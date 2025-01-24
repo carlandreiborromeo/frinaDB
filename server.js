@@ -39,11 +39,13 @@ app.post('/birthdays', async (req, res) => {
   const { name, birthday, gift } = req.body;
 
   try {
-    await sql.connect(config);
-    await sql.query`
-      INSERT INTO birthdays (name, birthday, gift)
-      VALUES (${name}, ${birthday}, ${gift})
-    `;
+    const pool = await sql.connect(config); // Connect to the database
+    await pool
+      .request()
+      .input('name', sql.NVarChar, name) // Bind 'name' parameter
+      .input('birthday', sql.Date, birthday) // Bind 'birthday' parameter
+      .input('gift', sql.NVarChar, gift) // Bind 'gift' parameter
+      .query('INSERT INTO birthdays (name, birthday, gift) VALUES (@name, @birthday, @gift)'); // Use parameters in the query
 
     res.status(201).json({ msg: 'Birthday data saved successfully' });
   } catch (err) {
