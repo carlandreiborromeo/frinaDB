@@ -1,42 +1,41 @@
 const express = require('express');
 const sql = require('mssql');
-const bodyParser = require('body-parser');
 const cors = require('cors');
 
 const app = express();
 const port = process.env.PORT || 8080; // Use dynamic port assignment for Azure
 
-app.use(bodyParser.json());
-app.use(cors());
-
-// Database configuration (use your Azure SQL connection string here)
-const config = {
-  user: 'frina',
-  password: 'Date1234',
-  server: 'birth.database.windows.net',
-  database: 'frinaDB',
+// Azure SQL connection configuration
+const dbConfig = {
+  user: 'frina', // Azure SQL username
+  password: 'Date1234', // Azure SQL password
+  server: 'birth.database.windows.net', // Azure SQL server name
+  database: 'frinaDB', // Your database name
   options: {
     encrypt: true, // Use encryption
     trustServerCertificate: true, // Ignore SSL certificate validation for simplicity
   },
 };
 
-// Test database connection
-sql.connect(config)
-  .then(() => console.log('Database connected successfully'))
-  .catch((err) => {
-    console.error('Error connecting to database:', err.message);
-    process.exit(1); // Exit the process if the database connection fails
-  });
+// Middleware
+app.use(cors());
+app.use(express.json());
 
 // Health check endpoint
 app.get('/', (req, res) => {
   res.send('App is running and healthy.');
 });
 
-// Route to save birthday data
-app.post('/birthdays', async (req, res) => {
-  const { name, birthday, gift } = req.body;
+app.get("/birthdays", async (req, res) => {
+  try {
+    const pool = await sql.connect(dbConfig); // Connect to Azure SQL
+    const result = await pool.request().query("SELECT * FROM birthdays ORDER BY id DESC");
+    res.json(result.recordset); // Return the query results
+  } catch (err) {
+    console.error("Error querying the database:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
   try {
     const pool = await sql.connect(config); // Connect to the database
@@ -54,6 +53,10 @@ app.post('/birthdays', async (req, res) => {
   }
 });
 
+// Route to save birthday data
+app.post('/birthdays', async (req, res) => {
+  const { name, birthday, gift } = req.body;
+  
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
