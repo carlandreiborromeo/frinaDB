@@ -22,7 +22,7 @@ app.use(cors());
 app.use(express.json());
 
 // Health check endpoint
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.send('App is running and healthy.');
 });
 
@@ -37,8 +37,12 @@ app.get("/birthdays", async (req, res) => {
   }
 });
 
+// Route to save birthday data
+app.post('/birthdays', async (req, res) => {
+  const { name, birthday, gift } = req.body;
+
   try {
-    const pool = await sql.connect(config); // Connect to the database
+    const pool = await sql.connect(dbConfig); // Connect to the database
     await pool
       .request()
       .input('name', sql.NVarChar, name) // Bind 'name' parameter
@@ -53,10 +57,6 @@ app.get("/birthdays", async (req, res) => {
   }
 });
 
-// Route to save birthday data
-app.post('/birthdays', async (req, res) => {
-  const { name, birthday, gift } = req.body;
-  
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
